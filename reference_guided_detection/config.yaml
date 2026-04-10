@@ -1,0 +1,112 @@
+# ─────────────────────────────────────────────
+#  VLM → YOLO-World Pipeline  ·  config.yaml
+# ─────────────────────────────────────────────
+
+vlm:
+  # "api" | "local"
+  mode: api
+
+  api:
+    provider: openrouter
+    base_url: https://openrouter.ai/api/v1
+    # Set via env: OPENROUTER_API_KEY
+    api_key: null
+    # Any vision-capable model on openrouter.ai
+    model: openai/gpt-4.1-mini
+    max_tokens: 512
+    timeout: 30
+
+  local:
+    # Ollama / vLLM / LM Studio compatible endpoint
+    base_url: http://localhost:11434/v1
+    model: llava:13b
+    max_tokens: 512
+    timeout: 60
+
+  prompt_template: |
+    You are a computer vision assistant. Your output will be fed directly
+    into a YOLO open-vocabulary object detector as its text prompts.
+
+    Look at the image and identify the single main object or target first.
+    After that, add several simple support labels that help a detector find
+    the same target more reliably with high recall.
+
+    Rules:
+    - Output ONLY a comma-separated list.
+    - Each label must be a short lower-case noun phrase, 1-3 words max.
+    - The first label must be the main object to detect.
+    - After the first label, include up to 8 support labels.
+    - Prefer broad detector-friendly labels, easy synonyms, and stable cues.
+    - Favor recall over precision.
+    - Include simple visible cues such as color, shape, category, clothing item,
+      carried object, or a broader class when useful.
+    - Avoid scene descriptions and abstract words.
+    - No explanations, no numbering, no sentences, no extra punctuation.
+
+    Example output format:
+    coffee mug, mug, cup, red mug, ceramic mug, drink cup
+
+detector:
+  type: yolo_world
+  # Favor detection quality over aggressive CPU downscaling.
+  weights: yolov8s-world.pt
+  confidence: 0.10
+  iou: 0.6  
+  max_classes: 25
+  device: cpu        # "cpu" | "cuda" | "mps"
+  imgsz: 768
+
+tracking:
+  enabled: true
+  # Keep live webcam detection full-frame by default on YOLO-World.
+  use_roi_search: false
+  acquire_hits: 3
+  max_missed_frames: 8
+  smoothing_alpha: 0.35
+  max_center_distance_ratio: 0.25
+  min_detection_confidence: 0.05
+  primary_label_bonus: 0.35
+  support_label_bonus: 0.16
+  label_stability_bonus: 0.18
+  track_id_bonus: 0.8
+  iou_bonus: 0.25
+  area_consistency_bonus: 0.18
+  aspect_consistency_bonus: 0.12
+  max_area_ratio: 2.4
+  max_aspect_ratio: 1.8
+  switch_margin: 0.22
+  strong_detection_confidence: 0.35
+  merge_duplicate_detections: true
+  merge_iou_threshold: 0.72
+  merge_center_distance_ratio: 0.18
+  consensus_confidence_bonus: 0.08
+  roi_padding_ratio: 0.35
+  lost_roi_padding_ratio: 0.85
+  roi_min_size: 160
+  roi_max_size_ratio: 0.75
+  global_refresh_interval: 12
+  max_roi_missed_before_global: 2
+  roi_min_hits: 4
+
+camera:
+  # 0 = default webcam; string = RTSP URL or file path
+  source: 0
+  backend: auto   # auto | dshow | msmf | any
+  width: 1280
+  height: 720
+  fps_limit: 30      # Cap inference rate; 0 = unlimited
+
+display:
+  window_name: "VLM → YOLO-World"
+  show_fps: true
+  show_labels: true
+  show_confidence: true
+  box_thickness: 2
+  font_scale: 0.55
+
+pipeline:
+  # Seconds between VLM re-queries (VLM is slow; reuse prompts between frames)
+  vlm_refresh_interval: 10.0
+  # If true, also save annotated frames to ./output/
+  save_output: false
+  output_dir: ./output

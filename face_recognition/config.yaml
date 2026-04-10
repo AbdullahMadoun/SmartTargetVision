@@ -1,0 +1,43 @@
+app:
+  title: Live Face Recognizer
+  share: false
+  port: 7862
+
+detector:
+  backend: yolo_small
+  weights: yolov8n-face-lindevs.pt
+  device: cpu
+  confidence: 0.25
+  iou: 0.45
+  imgsz: 512
+  max_classes: 8
+  max_det: 6
+  class_names:
+    - face
+  fallback_classes:
+    - face
+
+embedder:
+  backend: facenet
+  device: cpu
+  input_size: 160
+  pretrained: vggface2
+  margin: 14
+  face_confidence: 0.80
+  allow_full_frame_reference_fallback: false
+  fallback_backend: simple_stats
+
+matching:
+  threshold: 0.50
+  smoothing_window: 5
+  max_candidates_per_frame: 4
+
+runtime:
+  live_max_side: 640
+  probe_max_side: 960
+  reference_detect_max_side: 960
+
+ui:
+  reference_hint: |
+    Use a clear, front-facing reference photo with one visible face. You can add
+    a few extra reference images if lighting, pose, or angle changes matter.

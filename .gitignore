@@ -1,0 +1,14 @@
+.env
+*.py[cod]
+__pycache__/
+.pytest_cache/
+
+*.log
+
+mnt/
+mobileclip_blt.ts
+
+yolov8n.pt
+yolov8s.pt
+
+reference_guided_detection/output/

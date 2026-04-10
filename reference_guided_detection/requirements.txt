@@ -1,0 +1,14 @@
+# VLM → YOLO-World Pipeline — dependencies
+
+# Core
+ultralytics>=8.4.14         # YOLO-World + optional YOLOE support
+opencv-python>=4.9.0        # Camera capture + display
+httpx>=0.27.0               # Async-ready HTTP client for VLM APIs
+pyyaml>=6.0.1               # Config parsing
+gradio>=5.0.0               # Browser UI for chat + reference-image detection
+
+# Optional: faster inference on Apple Silicon
+# torch>=2.3.0 (install separately via https://pytorch.org/)
+
+# Optional: for CUDA inference
+# torch>=2.3.0+cu121  (install via pytorch.org for your CUDA version)

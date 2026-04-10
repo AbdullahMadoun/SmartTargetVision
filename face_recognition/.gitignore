@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.log
+
+.pytest_cache/
+
+tmp_*.jpg
+zidane_face_*.jpg
+
