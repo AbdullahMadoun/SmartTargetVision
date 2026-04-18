@@ -1,0 +1,19 @@
+services:
+  sim-monocam:
+    build:
+      context: ..
+      dockerfile: docker/sim-monocam.Dockerfile
+    image: drone-mcp/sim-monocam:local
+    environment:
+      PX4_SIM_MODEL: gz_x500_mono_cam
+      HEADLESS: "1"
+    ports:
+      - "14540:14540/udp"
+      - "14550:14550/udp"
+      - "8888:8888/udp"
+    healthcheck:
+      test: ["CMD-SHELL", "gz topic -l 2>/dev/null | grep -q '/sensor/camera/'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s

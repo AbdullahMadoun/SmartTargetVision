@@ -1,0 +1,53 @@
+Check Libraries:
+
+python3 -c "import cv2; print('OpenCV:', cv2.__version__)"
+python3 -c "import numpy; print('NumPy OK')"
+python3 -c "import tensorrt as trt; print('TensorRT:', trt.__version__)"
+
+-------------------------------------------------------------
+
+Check pycuda:
+
+python3 -c "import pycuda.driver as cuda; print('PyCUDA OK')"
+
+If not present do below:
+
+nvcc --version
+
+if it doesn't work or show anything, run these exports:
+
+ls /usr/local | grep cuda        ----> Must have cuda and cuda-12
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+then do:    pip3 install --user pycuda
+
+------------------------------------------------------------
+
+Check pymavlink:
+
+python3 -c "from pymavlink import mavutil; print('pymavlink OK')"
+
+if not present:    pip3 install --user pymavlink
+
+------------------------------------------------------------
+
+Convert onnx to trt
+
+/usr/src/tensorrt/bin/trtexec --onnx=model.onnx --saveEngine=model.engine --fp16
+
+
+(OPTIONAL Short test of the model: /usr/src/tensorrt/bin/trtexec --loadEngine=model.engine)
+
+------------------------------------------------------------
+
+if camera not found: ls /dev/video*
+
+------------------------------------------------------------
+
+
+
+
+
+
+

@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Drone MCP remote simulation operator — premium single-drone console for server-hosted flights."
+    />
+    <title>Drone Operator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+
+    <header id="toolbar">
+      <div class="toolbar-left">
+        <span class="logo">◈</span>
+        <div class="toolbar-title">
+          <h1>Drone MCP Console</h1>
+          <p class="toolbar-subtitle" id="session-summary-copy">
+            Single-drone simulation ops on a server-driven runtime
+          </p>
+          <div class="toolbar-meta">
+            <span id="sim-status-badge" class="badge badge-offline">OFFLINE</span>
+            <span id="connection-quality" class="quality-chip quality-polling">Polling</span>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar-center">
+        <div class="session-summary" aria-label="Simulation session summary">
+          <span class="session-summary-kicker">Session</span>
+          <strong id="session-summary-title">One test drone</strong>
+          <span id="session-summary-detail">
+            Heavy compute stays server-side. The UI stays focused, responsive, and easy to run.
+          </span>
+        </div>
+        <div class="toolbar-compat is-hidden" aria-hidden="true">
+          <label class="select-label" for="drone-selector">Drone</label>
+          <select id="drone-selector" class="toolbar-select" aria-label="Select active drone"></select>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button id="btn-theme" class="toolbar-btn" title="Toggle theme" aria-label="Toggle theme">
+          <span class="icon">◐</span>
+        </button>
+        <button id="btn-toggle-panel" class="toolbar-btn" title="Toggle control panel">
+          <span class="icon">☰</span>
+        </button>
+        <button id="btn-fullscreen" class="toolbar-btn" title="Fullscreen simulation">
+          <span class="icon">⛶</span>
+        </button>
+        <a
+          id="open-vnc"
+          class="toolbar-btn"
+          target="_blank"
+          rel="noreferrer"
+          title="Open VNC in new tab"
+        >
+          <span class="icon">↗</span>
+        </a>
+      </div>
+    </header>
+
+    <main id="main-layout" class="layout">
+      <section id="viewport" class="viewport">
+        <div id="vnc-loading" class="vnc-loading" aria-live="polite">
+          <div class="vnc-spinner"></div>
+          <p id="vnc-loading-msg">Waiting for simulation…</p>
+          <p class="vnc-loading-hint">The simulation will start automatically after deployment.</p>
+        </div>
+        <iframe id="sim-frame" title="Simulation View" allowfullscreen allow="fullscreen"></iframe>
+
+        <div id="hud-overlay" class="hud-overlay">
+          <div class="hud-card">
+            <div class="hud-title">Live Telemetry</div>
+            <div class="hud-grid">
+              <div><span>Alt</span><strong id="hud-altitude">--</strong></div>
+              <div><span>Speed</span><strong id="hud-speed">--</strong></div>
+              <div><span>Battery</span><strong id="hud-battery">--</strong></div>
+              <div><span>Mode</span><strong id="hud-mode">--</strong></div>
+              <div><span>GPS</span><strong id="hud-gps">--</strong></div>
+              <div><span>Status</span><strong id="hud-armed">--</strong></div>
+            </div>
+            <div class="hud-footer">
+              <span class="hud-heading-label">Heading</span>
+              <div class="compass" aria-hidden="true">
+                <div class="compass-ring"></div>
+                <div id="compass-arrow" class="compass-arrow"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside id="control-panel" class="control">
+        <div class="panel-tabs" role="tablist" aria-label="Operator panels">
+          <button class="panel-tab active" data-tab="mission" role="tab" aria-selected="true">
+            Mission
+          </button>
+          <button class="panel-tab" data-tab="camera" role="tab" aria-selected="false">
+            Camera
+          </button>
+          <button class="panel-tab" data-tab="recordings" role="tab" aria-selected="false">
+            Recordings
+          </button>
+        </div>
+
+        <div class="panel-scroll">
+          <section class="panel-tab-content active" data-panel="mission">
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Quick Actions</h2>
+                <span class="section-note">Runtime and flight primitives</span>
+              </div>
+              <div class="buttons">
+                <button id="btn-start" data-tool="start_simulation" class="btn-action btn-primary">
+                  ▶ Start
+                </button>
+                <button id="btn-stop" data-tool="stop_simulation" class="btn-action btn-danger">
+                  ■ Stop
+                </button>
+                <button id="btn-reset" data-tool="reset_simulation" class="btn-action btn-warning">
+                  ↻ Reset
+                </button>
+                <button id="btn-health" data-tool="get_runtime_health" class="btn-action">♥ Health</button>
+                <button id="btn-logs" data-tool="get_simulation_logs" class="btn-action">📋 Logs</button>
+                <button id="btn-connect" data-tool="connect_drone" class="btn-action btn-primary">
+                  Connect
+                </button>
+                <button id="btn-takeoff" data-tool="takeoff" class="btn-action">Takeoff</button>
+                <button id="btn-hold" data-tool="hold_position" class="btn-action">Hold</button>
+                <button id="btn-rtl" data-tool="return_to_launch" class="btn-action btn-danger">
+                  RTL
+                </button>
+              </div>
+            </div>
+
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Simulation Templates</h2>
+                <span class="section-note">Pre-made mission shells for fast starts</span>
+              </div>
+              <div id="template-grid" class="template-grid" aria-label="Simulation templates">
+                <button type="button" class="template-card">
+                  <strong>Training hover</strong>
+                  <span>Simple takeoff, hold, and return profile for quick operator checks.</span>
+                </button>
+                <button type="button" class="template-card">
+                  <strong>Survey loop</strong>
+                  <span>Waypoints around a compact area with camera and telemetry validation.</span>
+                </button>
+                <button type="button" class="template-card">
+                  <strong>Camera pass</strong>
+                  <span>Short mission designed to verify image capture and HUD tracking.</span>
+                </button>
+              </div>
+              <div id="template-summary" class="meta-box">
+                Choose a template to define how the simulator launches on the server.
+              </div>
+            </div>
+
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Launch Profile</h2>
+                <span class="section-note">Expert overrides merged into the selected preset</span>
+              </div>
+              <div class="launch-grid">
+                <label><span>Model</span><input id="launch-model" type="text" placeholder="gz_x500_mono_cam" /></label>
+                <label><span>Camera topic</span><input id="launch-camera-topic" type="text" placeholder="/world/.../sensor/camera/image" /></label>
+                <label><span>Ports</span><input id="launch-ports" type="text" placeholder="14540:14540/udp,14550:14550/udp" /></label>
+                <label><span>Env JSON</span><textarea id="launch-env-json" rows="3" placeholder='{"VNC_GEOMETRY":"1920x1080"}'></textarea></label>
+              </div>
+              <div class="launch-toggle-grid">
+                <label class="toggle-chip"><input id="launch-headless" type="checkbox" /> <span>Headless</span></label>
+                <label class="toggle-chip"><input id="launch-require-gui" type="checkbox" /> <span>Require GUI</span></label>
+                <label class="toggle-chip"><input id="launch-require-camera" type="checkbox" /> <span>Require camera</span></label>
+                <label class="toggle-chip"><input id="launch-network-host" type="checkbox" /> <span>Host network</span></label>
+              </div>
+              <div class="buttons buttons-tight">
+                <button id="btn-use-template-profile" class="btn-action">Use preset profile</button>
+                <button id="btn-clear-launch-overrides" class="btn-action">Clear env JSON</button>
+              </div>
+              <div id="launch-profile-summary" class="meta-box">
+                The active launch profile will be shown here.
+              </div>
+            </div>
+
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Precision Control</h2>
+                <span class="section-note">Manual offboard nudges for testing, recovery, and trim</span>
+              </div>
+              <div class="manual-tuning">
+                <label><span>Speed m/s</span><input id="manual-speed" type="number" step="0.1" value="0.8" /></label>
+                <label><span>Yaw deg/s</span><input id="manual-yaw-rate" type="number" step="1" value="25" /></label>
+              </div>
+              <div class="manual-grid" aria-label="Manual body-frame control">
+                <button type="button" class="manual-btn" data-manual-command="yaw-left">Yaw L</button>
+                <button type="button" class="manual-btn" data-manual-command="forward">Forward</button>
+                <button type="button" class="manual-btn" data-manual-command="yaw-right">Yaw R</button>
+                <button type="button" class="manual-btn" data-manual-command="left">Left</button>
+                <button type="button" class="manual-btn manual-btn-stop" data-manual-command="stop">Stop</button>
+                <button type="button" class="manual-btn" data-manual-command="right">Right</button>
+                <button type="button" class="manual-btn" data-manual-command="up">Up</button>
+                <button type="button" class="manual-btn" data-manual-command="back">Back</button>
+                <button type="button" class="manual-btn" data-manual-command="down">Down</button>
+              </div>
+              <div id="manual-control-status" class="meta-box">Manual body control is idle. Keyboard: W/A/S/D move, Q/E yaw, R/F altitude.</div>
+            </div>
+
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Mission Planning</h2>
+                <span class="section-note">Click the map to add waypoints</span>
+              </div>
+              <div class="map-shell">
+                <div class="map-toolbar">
+                  <button id="btn-center-map" class="tiny-btn">Center</button>
+                  <button id="btn-add-current" class="tiny-btn">Add current</button>
+                  <button id="btn-clear-waypoints" class="tiny-btn">Clear</button>
+                  <button id="btn-execute-mission" class="tiny-btn tiny-btn-primary">Execute mission</button>
+                </div>
+                <div id="waypoint-map" class="waypoint-map">
+                  <div id="map-fallback" class="map-fallback">
+                    Leaflet failed to load. Manual waypoint entry remains available.
+                  </div>
+                </div>
+              </div>
+
+              <form id="waypoint-form" class="inline-form">
+                <input id="wp-lat" type="number" step="any" placeholder="Latitude" />
+                <input id="wp-lon" type="number" step="any" placeholder="Longitude" />
+                <input id="wp-alt" type="number" step="any" placeholder="Alt m" value="10" />
+                <input id="wp-yaw" type="number" step="any" placeholder="Yaw" value="0" />
+                <button type="submit" class="tiny-btn tiny-btn-primary">Add waypoint</button>
+              </form>
+
+              <div id="waypoint-list" class="waypoint-list" aria-live="polite"></div>
+            </div>
+
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Geofence</h2>
+                <span class="section-note">Max altitude, radius, and RTL battery</span>
+              </div>
+              <div class="geofence-grid">
+                <label><span>Max altitude m</span><input id="geo-alt" type="number" step="1" value="120" /></label>
+                <label><span>Max distance m</span><input id="geo-distance" type="number" step="1" value="500" /></label>
+                <label><span>RTL battery %</span><input id="geo-battery" type="number" step="1" value="20" /></label>
+                <button id="btn-apply-geofence" class="tiny-btn tiny-btn-primary">Apply geofence</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel-tab-content" data-panel="camera">
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Camera Feed</h2>
+                <span class="section-note">Onboard camera extraction</span>
+              </div>
+              <div class="camera-shell">
+                <img id="camera-frame" alt="Drone camera frame" />
+                <div id="camera-placeholder" class="media-placeholder">
+                  Camera feed will appear here if the backend exposes `get_camera_frame`.
+                </div>
+              </div>
+              <div class="buttons buttons-tight">
+                <button id="btn-refresh-camera" class="btn-action">Refresh frame</button>
+                <button id="btn-fit-camera" class="btn-action">Fit to view</button>
+              </div>
+              <div id="camera-meta" class="meta-box">Camera is idle.</div>
+            </div>
+
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Tracking Assist</h2>
+                <span class="section-note">Server-side perception and follow-loop controls</span>
+              </div>
+              <div class="tracking-grid">
+                <label><span>Target class</span><input id="track-target-class" type="text" value="person" /></label>
+                <label><span>Confidence</span><input id="track-confidence" type="number" step="0.05" value="0.4" /></label>
+                <label><span>Loop s</span><input id="track-loop" type="number" step="0.05" value="0.35" /></label>
+                <label><span>Max fwd m/s</span><input id="track-max-forward" type="number" step="0.1" value="1.2" /></label>
+              </div>
+              <div class="buttons buttons-tight">
+                <button id="btn-track-start" class="btn-action btn-primary">Start tracking</button>
+                <button id="btn-track-step" class="btn-action">Single step</button>
+                <button id="btn-track-stop" class="btn-action btn-danger">Stop tracking</button>
+              </div>
+              <div id="tracking-status" class="meta-box">Tracking is idle.</div>
+            </div>
+          </section>
+
+          <section class="panel-tab-content" data-panel="recordings">
+            <div class="control-section">
+              <div class="section-heading">
+                <h2 class="section-title">Flight Recorder</h2>
+                <span class="section-note">Session logs and replay tracks</span>
+              </div>
+              <div class="buttons buttons-tight">
+                <button id="btn-start-recording" class="btn-action btn-primary">Start recording</button>
+                <button id="btn-stop-recording" class="btn-action btn-danger">Stop recording</button>
+                <button id="btn-refresh-recordings" class="btn-action">Refresh</button>
+              </div>
+              <div id="recording-summary" class="meta-box">No active recording.</div>
+              <div id="recording-list" class="recording-list"></div>
+            </div>
+          </section>
+
+          <section class="control-section status-section">
+            <div class="section-heading">
+              <button id="status-toggle" class="section-title section-title-button" type="button">
+                Status
+              </button>
+              <span class="section-note">Live runtime details</span>
+            </div>
+            <pre id="status-box">Loading runtime status…</pre>
+          </section>
+
+          <section class="control-section chat-section">
+            <div class="section-heading">
+              <h2 class="section-title">Operator Chat</h2>
+              <span id="chat-state" class="chat-state-badge">Checking…</span>
+            </div>
+            <div id="chat-log" class="chat-log"></div>
+            <form id="chat-form" class="chat-form">
+              <textarea
+                id="chat-input"
+                rows="3"
+                placeholder='E.g. "Take off to 10 meters" or "Fly to lat 47.40, lon 8.55"'
+              ></textarea>
+              <button type="submit" class="btn-send" title="Send message">➤</button>
+            </form>
+          </section>
+        </div>
+      </aside>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
